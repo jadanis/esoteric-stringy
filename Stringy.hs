@@ -1,4 +1,7 @@
-
+module String
+(
+intr
+) where
 
 import Data.Bits
 import Data.Char
