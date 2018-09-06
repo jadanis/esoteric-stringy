@@ -61,3 +61,30 @@ intr n x
           ys = _split x n
           z = hand xs (x!!n) ys
           m = (length z) - (length ys)
+
+intToSty' n
+    |n < 128 = str
+    |otherwise = (intToSty' (quot n 128))++str
+    where str = (chr . (`mod` 128) $ n):[]
+
+intToSty = do
+	     line <- getLine
+	     let numb = intToSty' . read $ line
+	     return numb
+
+removeItem _ [] = []
+removeItem x (y:ys) | x==y = ys
+		    | otherwise = y:(removeItem x ys)
+
+removeBefore' x (y:ys) | x==y = ys
+                       | otherwise = removeBefore' x ys
+removeBefore x (y:ys) = if (elem x (y:ys)) then (removeBefore' x (y:ys)) else ys
+
+ifst xs x ys
+    |odd . ord . last $ xs = xs++(removeItem '}' ys)
+    |otherwise = xs++zs
+    where zs = removeBefore '}' ys
+
+main = do
+    line <- getLine
+    putStrLn $ intr 0 line
