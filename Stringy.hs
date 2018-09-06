@@ -1,11 +1,12 @@
 module Stringy
-(
-intr
+( interpretStringy
+, interpret
 ) where
 
 import Data.Bits
 import Data.Char
 import Control.Monad (join)
+import Data.List (elemIndex)
 
 -- map function over a string 
 applyTo :: (Int -> Int) -> String -> String
@@ -142,15 +143,23 @@ hand x
 -- Changes command pointer based on command
 determinePointer :: Char -> Int -> Int
 determinePointer x n
-    | ((isLetter x) || (x == '(') || (x == '$') || (x == '^') || (not $ isPrint x)) = (n + 1)
+    | ((isLetter x) || (x == '(') || (x == '$') || (x == '^') || (x < ' ')) = (n + 1)
     | (x == '!') = (n - 2)
     | (x == ',') = 0
     | otherwise = n
 
--- Most of the program interpretation can be handled here
+---------------------------------------------
+---------------------------------------------
+-- intr is for manipulating the string     --
+-- execute the command at the nth char     --
+-- and continue this recursively           --
+-- essentially handles all non-IO commands --
+---------------------------------------------
+---------------------------------------------
+
 intr :: Int -> String -> String
 intr n prog
-    | prog == "" = error "No program was provided!" -- error on empty string
+    | prog == "" = error "" -- error on empty string
     | (n >= length prog) || (n < 0) = intr (n `mod` (length prog)) prog 
     | x == '.' = end xs x ys -- done no call to intr
     | x == ';' = intr n ((intr 0 xs)++ys) -- call intr on xs at 0 before resuming with the whole result at n
@@ -162,13 +171,52 @@ intr n prog
           newprog = (hand x) xs x ys -- string result after current command
           m = if x == '_' then (length newprog) - (length ys) else determinePointer x n -- special case for _ otherwise use determinePointer
 
--- handling IO functions - In progress
-intToSty' n
-    |n < 128 = str
-    |otherwise = (intToSty' (quot n 128))++str
-    where str = (chr . (`mod` 128) $ n):[]
+------------------------
+-- Run time functions --
+------------------------
 
-intToSty = do
-    line <- getLine
-    let numb = intToSty' . read $ line
-    return numb
+-- Contstant to indicate where input is needed
+inputMarker :: Char
+inputMarker = '\500'
+
+-- Constant as string for starting a program
+-- (considering intial program as user input)
+start :: [Char]
+start = inputMarker:[]
+
+-- special index -1 if not found
+elemIndex' :: (Eq a) => a -> [a] -> Int
+elemIndex' x xs = case (elemIndex x xs) of
+                      Just n -> n
+                      Nothing -> -1
+
+-- replace nth char with new string
+inject :: Int -> String -> String -> String
+inject n org inp = xs++inp++ys
+    where z = splitAt n org
+          xs = fst z
+          ys = tail . snd $ z
+
+-- this assumes a program originates from 
+-- interpret - needs updating to a better set up
+-- pointer is the index of special \500 char 
+-- this is -1 if not located
+-- If pointer is -1 then we simply output the program
+-- otherwise take input from std-in
+-- newpointer is the length of input plus current pointer
+-- newprogram we replace \500 with the input
+-- run intr on newprogram at newpointer
+-- pass this to interpretStringy
+interpretStringy program = do
+    let pointer = elemIndex' inputMarker program
+    if pointer < 0 
+        then putStrLn program 
+        else do
+            input <- getLine
+            let newpointer = (length input) + pointer
+                newprogram = inject pointer program input
+            interpretStringy $ intr newpointer newprogram
+
+-- start by getting a line for initial program
+-- input by std-in
+interpret = interpretStringy start
