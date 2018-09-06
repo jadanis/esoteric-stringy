@@ -142,7 +142,7 @@ hand x
 -- Changes command pointer based on command
 determinePointer :: Char -> Int -> Int
 determinePointer x n
-    | ((isLetter x) || (x == '(') || (x == '$') || (x == '^')) = (n + 1)
+    | ((isLetter x) || (x == '(') || (x == '$') || (x == '^') || (not $ isPrint x)) = (n + 1)
     | (x == '!') = (n - 2)
     | (x == ',') = 0
     | otherwise = n
