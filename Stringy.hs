@@ -1,41 +1,95 @@
-import Data.Char
+
+
 import Data.Bits
+import Data.Char
+import Control.Monad (join)
 
-sp f x = map (chr . (`mod` 128) . f . ord) x --this form is used multiple times where you want to map over a string, take the ordinal of the char then use f, mod 128, back to chr
-sL x = shiftL x 1 --short hand for left shift by 1
-sR x = shiftR x 1 --short hand for right shift by 
-shuff' "" = ""
-shuff' x 
-    |odd n = (shuff' ((map (x!!) [0..((quot n 2)-1)])++(map (x!!) [((quot n 2)+1)..(n-1)])))++((x!!(quot n 2)):[]) 
-    |otherwise = ((x!!0):(x!!(quot n 2)):[])++(shuff' ((map (x!!) [1..((quot n 2)-1)])++(map (x!!) [((quot n 2)+1)..(n-1)]))) 
-    where n = length x
-rep' x n = foldl (++) "" (replicate n x)
+-- map function over a string 
+applyTo :: (Int -> Int) -> String -> String
+applyTo f = map (chr . (`mod` 128) . f . ord)
+
+-- left and right bit shifts
+(.>) :: Bits a => a -> a
+(.>) = flip shiftR 1
+(<.) :: Bits a => a -> a
+(<.) = flip shiftL 1
+
+-----------------------------------------------------
+-- The following is a list of the Stingy functions --
+-- (and some helper functions as well)             --
+-- determined by the Char in the string.           --
+-- They are kept in a master list of functions to  --
+-- be called as needed.                            --
+-- These have the form:                            --
+-- (String -> Char -> String -> String)            --
+-----------------------------------------------------
+
+-- the general forms these functions take
+-- used to reduce typing later on and show functions in point-free form
+form0 :: (Int -> Int) -> String -> Char -> String -> String
+form0 f xs x ys = (applyTo f xs)++[x]++ys
+form1 :: (Int -> Int) -> String -> Char -> String -> String
+form1 f xs x ys = (applyTo f xs)++ys
+form2 :: (Int -> Int -> Int) -> String -> Char -> String -> String
+form2 f xs x ys = (applyTo (f $ ord $ head ys) xs)++(tail ys)
+form3 :: (String -> String) -> String -> Char -> String -> String
+form3 f xs x ys = (f xs)++ys
+
+-- The identity function
+id' = form0 id
+inc = form1 succ
+-- The decrement function
+dec = form1 pred
+-- The shift left function
+shiftSL = form1 (<.)
+-- The shift right function
+shiftSR = form1 (.>)
+-- The append digit function
+appendDigit :: Int -> String -> Char -> String -> String
+appendDigit n = form1 ((+n) . (*10))
+-- The modulo function
+mod' = form2 (flip mod)
+-- The addition function
+plus = form2 (+)
+-- The subtraction function
+minus = form2 subtract
+-- The multiplication function
+mult = form2 (*)
+-- the divistion function
+divi = form2 (flip div)
+-- The repeat fucntion
+rep xs x ys = (join $ replicate (ord $ head ys) xs)++ys
+-- The pivot function
+piv xs x ys = (init xs)++[head ys]++[last xs]++(tail ys)
+-- The throw forward function
+front xs x ys = [head ys]++xs++(tail ys)
+-- The throw back function
+back xs x ys = xs++(tail ys)++[head ys]
+-- The reverse function
+rev = form3 reverse
+-- The shuffle function
+shuff' :: String -> String
+shuff' xs
+    | odd n = (zipple (splitAt (s+1) xs))++[x']
+    | otherwise = zipple (splitAt s xs)
+    where n = length xs
+          s = n `div` 2
+          x' = last . fst $ splitAt (s + 1) xs
+          zipple (p,q) = foldl (\acc (x,y) -> acc++[x,y]) "" $ zip p q
+
+shuff = form3 shuff'
+-- The terminate funcion
+end = form1 id
 
 
-id' xs x ys = xs++(x:[])++ys --the identity function for the form String -> Char -> String -> String
-inc xs x ys = (sp succ xs)++ys -- increments xs 
-dec xs x ys = (sp pred xs)++ys -- decrements xs
-sXL xs x ys = (sp sL xs)++ys -- shifts left xs
-sXR xs x ys = (sp sR xs)++ys -- shifts right xs
-times n xs x ys = (sp ((+n) . (*10)) xs)++ys -- multiples xs by 10 plus n
-rep xs x ys = (rep' xs (ord (head ys)))++(tail ys)
-piv xs x ys = (init xs)++((head ys):[])++((last xs):[])++(tail ys)
-readUs xs x ys = id' xs x ys -- this may not be possible
-exor xs x ys = id' xs x ys --(sp (xor (head ys)) xs)++(tail ys)
-front xs x ys = ((head ys):[])++xs++(tail ys) -- moves the head of ys to the front of the string
-back xs x ys = xs++(tail ys)++((head ys):[]) -- moves the head of ys to the back of the string
-end xs x ys = xs++ys
-mod' xs x ys = (sp (`mod` (ord (head ys))) xs)++(tail ys)
-plus xs x ys = (sp ((+) (ord (head ys))) xs)++(tail ys)
-divi xs x ys = (sp (`quot` (ord (head ys))) xs)++(tail ys)
-mult xs x ys = (sp (* (ord (head ys))) xs)++(tail ys)
-minus xs x ys = (sp (subtract (ord (head ys))) xs)++(tail ys)
-shuff xs x ys = (shuff' xs)++ys
+
+
+
 grteq xs x ys = (init xs)++((if (ord (last xs)) >= (ord (head ys)) then (chr 1) else (chr 0)):[])++(tail ys)
-rev xs x ys = (reverse xs)++ys
 
 
-comlist = [id',id',id',id',id',mod',id',id',front,back,mult,plus,readUs,minus,end,divi,(times 0),(times 1),(times 2),(times 3),(times 4),(times 5),(times 6),(times 7),(times 8),(times 9),id',id',sXL,id',sXR,shuff,id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',inc,grteq,dec,piv,rep,id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',rev,id']
+
+comlist = [id',id',id',id',id',mod',id',id',front,back,mult,plus,id',minus,end,divi,(appendDigit 0),(appendDigit 1),(appendDigit 2),(appendDigit 3),(appendDigit 4),(appendDigit 5),(appendDigit 6),(appendDigit 7),(appendDigit 8),(appendDigit 9),id',id',shiftSL,id',shiftSR,shuff,id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',inc,grteq,dec,piv,rep,id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',id',rev,id']
 
 com x = comlist!!((ord x) - 32)
 hand xs x ys = (com x) xs x ys
@@ -68,13 +122,13 @@ intToSty' n
     where str = (chr . (`mod` 128) $ n):[]
 
 intToSty = do
-	     line <- getLine
-	     let numb = intToSty' . read $ line
-	     return numb
+    line <- getLine
+    let numb = intToSty' . read $ line
+    return numb
 
 removeItem _ [] = []
 removeItem x (y:ys) | x==y = ys
-		    | otherwise = y:(removeItem x ys)
+    | otherwise = y:(removeItem x ys)
 
 removeBefore' x (y:ys) | x==y = ys
                        | otherwise = removeBefore' x ys
@@ -85,6 +139,3 @@ ifst xs x ys
     |otherwise = xs++zs
     where zs = removeBefore '}' ys
 
-main = do
-    line <- getLine
-    putStrLn $ intr 0 line
