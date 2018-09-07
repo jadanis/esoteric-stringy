@@ -1,6 +1,7 @@
 module Stringy
 ( interpretStringy
 , interpret
+, intr
 ) where
 
 import Data.Bits
@@ -88,6 +89,10 @@ ifst xs x ys
     | odd . ord . last $ xs = (init xs)++(removeBrace ys)
     | otherwise = (init xs)++(tail $ dropWhile (/= '}') ys)
     where removeBrace = (\st -> (takeWhile (/= '}') st)++(tail $ dropWhile (/= '}') st))
+-- The delete function
+del = form3 (\x -> "")
+-- Get string function (inputs '\500' - special character)
+getString = form3 (\x -> x++['\500']) 
 -- Uses up the current char but changes nothing otherwise
 use = form1 id
 -- The terminate funcion
@@ -102,7 +107,7 @@ end = use
 ---------------------------------------------------------
 hand :: Char -> (String -> Char -> String -> String)
 hand x
-    | x == ' ' = id' -- read string input handled elsewhere
+    | x == ' ' = getString -- read string input handled elsewhere
     | x == '!' = use -- back skip function handled elsewhere
     | x == '\"' = id' -- undefined
     | x == '#' = id' -- read number input handled elsewhere
@@ -137,7 +142,7 @@ hand x
     | x == '|' = id' -- undefined
     | x == '}' = id' -- part of the ifst
     | x == '~' = rev
-    | x == '\DEL' = id' -- undefined
+    | x == '\DEL' = del
     | otherwise = id' -- ASCII 0 thru 31 non ops 
 
 -- Changes command pointer based on command
@@ -162,6 +167,7 @@ intr n prog
     | prog == "" = error "" -- error on empty string
     | (n >= length prog) || (n < 0) = intr (n `mod` (length prog)) prog 
     | x == '.' = end xs x ys -- done no call to intr
+    | x == ' ' = getString xs x ys
     | x == ';' = intr n ((intr 0 xs)++ys) -- call intr on xs at 0 before resuming with the whole result at n
     | x == '@' = intr (ord (head ys)) (xs++(tail ys)) -- set command point to the ord of head of ys
     | otherwise = intr m newprog -- all other commands handled here
@@ -197,26 +203,26 @@ inject n org inp = xs++inp++ys
           xs = fst z
           ys = tail . snd $ z
 
--- this assumes a program originates from 
--- interpret - needs updating to a better set up
 -- pointer is the index of special \500 char 
 -- this is -1 if not located
--- If pointer is -1 then we simply output the program
--- otherwise take input from std-in
+-- If pointer is -1 then return the program
 -- newpointer is the length of input plus current pointer
 -- newprogram we replace \500 with the input
 -- run intr on newprogram at newpointer
 -- pass this to interpretStringy
+interpretStringy :: String -> IO String
 interpretStringy program = do
     let pointer = elemIndex' inputMarker program
     if pointer < 0 
-        then putStrLn program 
+        then return program 
         else do
             input <- getLine
             let newpointer = (length input) + pointer
                 newprogram = inject pointer program input
             interpretStringy $ intr newpointer newprogram
 
--- start by getting a line for initial program
--- input by std-in
-interpret = interpretStringy start
+-- pass start to interpretStringy
+-- bind this result
+interpret = do
+    result <- interpretStringy start
+    putStrLn result
