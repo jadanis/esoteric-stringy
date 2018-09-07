@@ -150,7 +150,7 @@ determinePointer :: Char -> Int -> Int
 determinePointer x n
     | ((isLetter x) || (x == '(') || (x == '$') || (x == '^') || (x < ' ')) = (n + 1)
     | (x == '!') = (n - 2)
-    | (x == ',') = 0
+    | (x == ',') || (x =='\DEL') = 0
     | otherwise = n
 
 ---------------------------------------------
