@@ -62,7 +62,7 @@ mult = form2 (*)
 -- the divistion function
 divi = form2 (flip div)
 -- The repeat fucntion
-rep xs x ys = (join $ replicate (ord $ head ys) xs)++ys
+rep xs x ys = (join $ replicate (ord $ head ys) xs)++(tail ys)
 -- The pivot function
 piv xs x ys = (init xs)++[head ys]++[last xs]++(tail ys)
 -- The throw forward function
