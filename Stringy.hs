@@ -85,14 +85,17 @@ shuff = form3 shuff'
 -- The greater than or equal function
 grteq xs x ys = (init xs)++(if (last xs) >= (head ys) then ['1'] else ['0'])++(tail ys)
 -- The if-then statement
-ifst xs x ys
+ifst' xs x ys
     | odd . ord . last $ xs = (init xs)++(removeBrace ys)
     | otherwise = (init xs)++(tail $ dropWhile (/= '}') ys)
     where removeBrace = (\st -> (takeWhile (/= '}') st)++(tail $ dropWhile (/= '}') st))
+ifst xs x ys = if (elem '}' ys) then ifst' xs x ys else (if odd . ord $ last xs then (init xs)++ys else (init xs)++(tail ys))
 -- The delete function
 del = form3 (\x -> "")
 -- Get string function (inputs '\500' - special character)
 getString = form3 (\x -> x++['\500']) 
+-- Subroutine function calls intr below
+subr = form3 (intr 0)
 -- Uses up the current char but changes nothing otherwise
 use = form1 id
 -- The terminate funcion
@@ -125,7 +128,7 @@ hand x
     | x == '/' = divi
     | isDigit x = (appendDigit $ read [x])
     | x == ':' = id' -- undefined
-    | x == ';' = id' -- subroutine function handled elsewhere
+    | x == ';' = subr 
     | x == '<' = shiftSL
     | x == '=' = id' -- undefined
     | x == '>' = shiftSR
@@ -149,6 +152,7 @@ hand x
 determinePointer :: Char -> Int -> Int
 determinePointer x n
     | ((isLetter x) || (x == '(') || (x == '$') || (x == '^') || (x < ' ')) = (n + 1)
+    | (x == '{') = (n - 1)
     | (x == '!') = (n - 2)
     | (x == ',') || (x =='\DEL') = 0
     | otherwise = n
@@ -168,14 +172,13 @@ intr n prog
     | (n >= length prog) || (n < 0) = intr (n `mod` (length prog)) prog 
     | x == '.' = end xs x ys -- done no call to intr
     | x == ' ' = getString xs x ys
-    | x == ';' = intr n ((intr 0 xs)++ys) -- call intr on xs at 0 before resuming with the whole result at n
     | x == '@' = intr (ord (head ys)) (xs++(tail ys)) -- set command point to the ord of head of ys
     | otherwise = intr m newprog -- all other commands handled here
     where x = (prog!!n) -- char at current command pointer
           xs = fst $ splitAt n prog -- string before at current command
           ys = tail . snd $ splitAt n prog -- string after current command
           newprog = (hand x) xs x ys -- string result after current command
-          m = if x == '_' then (length newprog) - (length ys) else determinePointer x n -- special case for _ otherwise use determinePointer
+          m = if (x == '_') || (x == ';') then (length newprog) - (length ys) else determinePointer x n -- special case for _ otherwise use determinePointer
 
 ------------------------
 -- Run time functions --
