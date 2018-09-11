@@ -30,7 +30,7 @@ form0 f xs x ys = (applyTo f xs)++[x]++ys
 form1 :: (Int -> Int) -> String -> Char -> String -> String
 form1 f xs x ys = (applyTo f xs)++ys
 form2 :: (Int -> Int -> Int) -> String -> Char -> String -> String
-form2 f xs x ys = (applyTo (f $ ord $ head ys) xs)++(tail ys)
+form2 f xs x ys = form1 (f $ ord $ head ys) xs x (tail ys)
 form3 :: (String -> String) -> String -> Char -> String -> String
 form3 f xs x ys = (f xs)++ys
 
@@ -96,6 +96,8 @@ del = form3 (\x -> "")
 getString = form3 (\x -> x++['\500']) 
 -- Subroutine function calls intr below
 subr = form3 (intr 0)
+-- Jump to function
+jump xs x ys = form3 id xs x (tail ys)
 -- Uses up the current char but changes nothing otherwise
 use = form1 id
 -- The terminate funcion
@@ -133,7 +135,7 @@ hand x
     | x == '=' = id' -- undefined
     | x == '>' = shiftSR
     | x == '?' = shuff
-    | x == '@' = id' -- jump function handled elsewhere
+    | x == '@' = jump -- jump function handled elsewhere
     | isLetter x = id' -- Letters are non-ops 
     | x == '[' = inc
     | x == '\\' = grteq
@@ -170,15 +172,13 @@ intr :: Int -> String -> String
 intr n prog
     | prog == "" = error "" -- error on empty string
     | (n >= length prog) || (n < 0) = intr (n `mod` (length prog)) prog 
-    | x == '.' = end xs x ys -- done no call to intr
-    | x == ' ' = getString xs x ys
-    | x == '@' = intr (ord (head ys)) (xs++(tail ys)) -- set command point to the ord of head of ys
+    | (x == '.') || (x == ' ') = newprog -- done no call to intr
     | otherwise = intr m newprog -- all other commands handled here
     where x = (prog!!n) -- char at current command pointer
           xs = fst $ splitAt n prog -- string before at current command
           ys = tail . snd $ splitAt n prog -- string after current command
           newprog = (hand x) xs x ys -- string result after current command
-          m = if (x == '_') || (x == ';') then (length newprog) - (length ys) else determinePointer x n -- special case for _ otherwise use determinePointer
+          m = if (x == '_') || (x == ';') then (length newprog) - (length ys) else (if x == '@' then ord $ head ys else determinePointer x n) -- special case for _ otherwise use determinePointer
 
 ------------------------
 -- Run time functions --
