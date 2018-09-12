@@ -83,7 +83,7 @@ shuff' xs
 
 shuff = form3 shuff'
 -- The greater than or equal function
-grteq xs x ys = (init xs)++(if (last xs) >= (head ys) then ['1'] else ['0'])++(tail ys)
+grteq xs x ys = (init xs)++(if (last xs) > (head ys) then "1" else "0")++(tail ys)
 -- The if-then statement
 ifst' xs x ys
     | odd . ord . last $ xs = (init xs)++(removeBrace ys)
@@ -98,6 +98,10 @@ getString = form3 (\x -> x++['\500'])
 subr = form3 (intr 0)
 -- Jump to function
 jump xs x ys = form3 id xs x (tail ys)
+-- Equal function
+eq xs x ys = (init xs)++(if (last xs) == (head ys) then "1" else "0")++(tail ys)
+-- length of previous string
+length' = form3 (\x -> x++[chr . length x])
 -- Uses up the current char but changes nothing otherwise
 use = form1 id
 -- The terminate funcion
@@ -115,7 +119,7 @@ hand x
     | x == ' ' = getString -- read string input handled elsewhere
     | x == '!' = use -- back skip function handled elsewhere
     | x == '\"' = id' -- undefined
-    | x == '#' = id' -- read number input handled elsewhere
+    | x == '#' = length' -- length
     | x == '$' = use -- skip function handled elsewhere
     | x == '%' = mod'
     | x == '&' = id' -- undefined
@@ -129,10 +133,10 @@ hand x
     | x == '.' = end
     | x == '/' = divi
     | isDigit x = (appendDigit $ read [x])
-    | x == ':' = id' -- undefined
+    | x == ':' = id' -- save routine
     | x == ';' = subr 
     | x == '<' = shiftSL
-    | x == '=' = id' -- undefined
+    | x == '=' = eq -- equal
     | x == '>' = shiftSR
     | x == '?' = shuff
     | x == '@' = jump -- jump function handled elsewhere
@@ -144,7 +148,7 @@ hand x
     | x == '_' = rep
     | x == '`' = id' -- undefined
     | x == '{' = ifst
-    | x == '|' = id' -- undefined
+    | x == '|' = id' -- call function
     | x == '}' = id' -- part of the ifst
     | x == '~' = rev
     | x == '\DEL' = del
@@ -229,3 +233,6 @@ interpretStringy program = do
 interpret = do
     result <- interpretStringy start
     putStrLn result
+
+-- $~[!,| :[+$|$+${$z;["| d( (r( (k( (`( (E( (-(~(z:-#+#(#'#+# #'#]#<#'#+###'#Z#'#]#'#.!)^0-0$H@~$!.!T!r!u!e!
+-- ^ This should be a valid program for palindrome detection
