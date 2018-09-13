@@ -101,7 +101,7 @@ jump xs x ys = form3 id xs x (tail ys)
 -- Equal function
 eq xs x ys = (init xs)++(if (last xs) == (head ys) then "1" else "0")++(tail ys)
 -- length of previous string
-length' = form3 (\x -> x++[chr . length x])
+length' = form3 (\x -> x++[chr . length $ x])
 -- Uses up the current char but changes nothing otherwise
 use = form1 id
 -- The terminate funcion
