@@ -95,13 +95,17 @@ del = form3 (\x -> "")
 -- Get string function (inputs '\500' - special character)
 getString = form3 (\x -> x++['\500']) 
 -- Subroutine function calls intr below
-subr = form3 (intr 0)
+subr xs x ys = (fst $ intr 0 (xs,""))++ys
 -- Jump to function
 jump xs x ys = form3 id xs x (tail ys)
 -- Equal function
 eq xs x ys = (init xs)++(if (last xs) == (head ys) then "1" else "0")++(tail ys)
 -- length of previous string
 length' = form3 (\x -> x++[chr . length $ x])
+-- Keeps the preceding string as a Subroutine
+keep = del
+-- call the kept function
+call ext = form3 (\x -> x++ext)
 -- Uses up the current char but changes nothing otherwise
 use = form1 id
 -- The terminate funcion
@@ -133,7 +137,7 @@ hand x
     | x == '.' = end
     | x == '/' = divi
     | isDigit x = (appendDigit $ read [x])
-    | x == ':' = id' -- save routine
+    | x == ':' = keep -- save routine
     | x == ';' = subr 
     | x == '<' = shiftSL
     | x == '=' = eq -- equal
@@ -148,7 +152,7 @@ hand x
     | x == '_' = rep
     | x == '`' = id' -- undefined
     | x == '{' = ifst
-    | x == '|' = id' -- call function
+    | x == '|' = call -- call function
     | x == '}' = id' -- part of the ifst
     | x == '~' = rev
     | x == '\DEL' = del
@@ -172,17 +176,18 @@ determinePointer x n
 ---------------------------------------------
 ---------------------------------------------
 
-intr :: Int -> String -> String
-intr n prog
+intr :: Int -> (String,String) -> (String,String)
+intr n (prog,ext)
     | prog == "" = error "" -- error on empty string
-    | (n >= length prog) || (n < 0) = intr (n `mod` (length prog)) prog 
-    | (x == '.') || (x == ' ') = newprog -- done no call to intr
-    | otherwise = intr m newprog -- all other commands handled here
+    | (n >= length prog) || (n < 0) = intr (n `mod` (length prog)) (prog,ext) 
+    | (x == '.') || (x == ' ') = (newprog,ext) -- done no call to intr
+    | (x == ':') = intr m (newprog,xs)
+    | otherwise = intr m (newprog,ext) -- all other commands handled here
     where x = (prog!!n) -- char at current command pointer
           xs = fst $ splitAt n prog -- string before at current command
           ys = tail . snd $ splitAt n prog -- string after current command
           newprog = (hand x) xs x ys -- string result after current command
-          m = if (x == '_') || (x == ';') then (length newprog) - (length ys) else (if x == '@' then ord $ head ys else determinePointer x n) -- special case for _ otherwise use determinePointer
+          m = if (x == '_') || (x == ';') || (x=='|') then (length newprog) - (length ys) else (if x == '@' then ord $ head ys else determinePointer x n) -- special case for _ otherwise use determinePointer
 
 ------------------------
 -- Run time functions --
@@ -194,8 +199,8 @@ inputMarker = '\500'
 
 -- Constant as string for starting a program
 -- (considering intial program as user input)
-start :: [Char]
-start = inputMarker:[]
+start :: ([Char],String)
+start = (inputMarker:[],"")
 
 -- special index -1 if not found
 elemIndex' :: (Eq a) => a -> [a] -> Int
@@ -217,21 +222,21 @@ inject n org inp = xs++inp++ys
 -- newprogram we replace \500 with the input
 -- run intr on newprogram at newpointer
 -- pass this to interpretStringy
-interpretStringy :: String -> IO String
+interpretStringy :: (String,String) -> IO (String,String)
 interpretStringy program = do
-    let pointer = elemIndex' inputMarker program
+    let pointer = elemIndex' inputMarker (fst program)
     if pointer < 0 
         then return program 
         else do
             input <- getLine
             let newpointer = (length input) + pointer
-                newprogram = inject pointer program input
+                newprogram = (inject pointer (fst program) input, snd program)
             interpretStringy $ intr newpointer newprogram
 
 -- pass start to interpretStringy
 -- bind this result
 interpret = do
-    result <- interpretStringy start
+    (result,ext) <- interpretStringy start
     putStrLn result
 
 -- $~[!,| :[+$|$+${$z;["| d( (r( (k( (`( (E( (-(~(z:-#+#(#'#+# #'#]#<#'#+###'#Z#'#]#'#.!)^0-0$H@~$!.!T!r!u!e!
