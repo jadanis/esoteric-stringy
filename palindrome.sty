@@ -1,0 +1,36 @@
+$~[!,| :[+$|$+${$z;["|+ 'd( (r( (k( (`( (E( (-(~(z:-#+#(#'#+# #'#]#<#'#+###'#Z#'#]#'#.!)^0-0$J@~$!.!T!r!u!e!
+
+  Tab for comments
+  $~[! <--- changees the ~ to \DEL then goes backwards to the last ! of the string
+  ~$!.!T!r!u!e! <--- jumps back along the !'s until it reaches the ~ reversing the rest of the string then skips the . goes to 0
+  @J <--- goes to command 74 the ;
+  $0-0^)!.#'#]#'#Z#'###+#'#<#]#'# #+#'#(#+#-:z(~(-( (E( (`( (k( (r( (d' +|"[ run as sub-routine
+  $0-0^)!. <--- sets leading char to \NUL swaps it with ) jumps back to the ) to throw \NUL to the end and stops subroutine
+  #'#]#'#Z#'###+#'#<#]#'# #+#'#(#+#-:z(~(-( (E( (`( (k( (r( (d' +|"[\NULz${$+$|$+[: |,\DEL.True <--- return from ; pointer at z
+  z${$+$|$+[: <--- skip commands unil the [ incrementing whole string, : saves this as a subroutine to call
+  $($^$($[$($$$,$($=$^$($!$,$($)$,$.;{)\DEL).)!)F)!)a)!)l)!)s)!)e(!,}#\\SOH{|,}, <-- the saved subroutine
+   |,\DEL.True <--- pointer at 0 (a SPACE) to take user input should be letters) | calls subroutine then jumps to 0
+  
+  suppose user enters aba
+  aba$($^$($[$($$$,$($=$^$($!$,$($)$,$.;{)\DEL).)!)F)!)a)!)l)!)s)!)e(!,}#\\SOH{|,},\DEL.True <--- current command
+  aba$($^$($[$($$$,$($=$^$($!$,$($)$,$.; <--- skips along until ; run as subroutine
+  aba(^([($,(=^(!,(),. <--- subroutine
+  aba(^([($, <--- throws ^ [ and $ to the front to return to 0
+  $[^aba(=^(!, <--- switch a and [ throw = to front switch last a with ( and jump back to this to throw a to front return to 0
+  a=a[b(),. <--- tests if a is equal to a and increments the result to 2 (even so equivalent to false) (), thrwos 2 to end and stops subroutine
+  b2{)\DEL).)!)F)!)a)!)l)!)s)!)e(!,}#\\SOH{|,},\DEL.True <--- return from subroutine pointer at 2 (the {) 
+  b#\\SOH{|,},\DEL.True <--- dropped the statement between {}. Tests length since its only 1 false we delete the b and exit 
+  True <--- result printed on screen
+  
+  suppose user entes nope
+  nope$($^$($[$($$$,$($=$^$($!$,$($)$,$.;{)\DEL).)!)F)!)a)!)l)!)s)!)e(!,}#\\SOH{|,},\DEL.True <--- current command
+  nope$($^$($[$($$$,$($=$^$($!$,$($)$,$.; <--- skips along until ; run as rubroutine
+  nope(^([($,(=^(!,(),. <--- subroutine
+  nope(^([($, <--- throws ^ [ and $ to the front to return to 0
+  $[^nope(=^(!, <--- switch n and [ throw = to front switch last a with ( and jump back to this to throw e to front return to 0
+  e=n[op(),. <--- tests if e is equal to n and increments it the result is 1 (equivalent to true) (), throws 1 to end and stops
+  op1{)\DEL).)!)F)!)a)!)l)!)s)!)e(!,}#\\SOH{|,},\DEL.True <--- return from subroutine pointer at 3 (the {)
+  op)\DEL).)!)F)!)a)!)l)!)s)!)e(!,#\\SOH{|,},\DEL.True <--- true so returns code between {}
+  op)\DEL).)!)F)!)a)!)l)!)s)!)e(!, <--- throw characters to back, throws ! to front, returns to front
+  !op#\\SOH{|,},\DEL.True\DEL.!F!a!l!s!e <-- travels back along !'s to \DEL delets everything, before . then terminates
+  False <--- result printed on screen
