@@ -64,7 +64,7 @@ divi = form2 (flip div)
 -- The repeat fucntion
 rep xs x ys = (join $ replicate (ord $ head ys) xs)++(tail ys)
 -- The pivot function
-piv xs x ys = (init xs)++[head ys]++[last xs]++(tail ys)
+piv xs x ys = if xs == "" then (if (length ys) > 1 then [last ys]++(init . tail $ ys)++[head ys] else ys) else((init xs)++[head ys]++[last xs]++(tail ys))
 -- The throw forward function
 front xs x ys = [head ys]++xs++(tail ys)
 -- The throw back function
@@ -83,13 +83,13 @@ shuff' xs
 
 shuff = form3 shuff'
 -- The greater than or equal function
-grteq xs x ys = (init xs)++(if (last xs) > (head ys) then "1" else "0")++(tail ys)
+grteq xs x ys = if xs == "" then "0"++(tail ys) else (init xs)++(if (last xs) > (head ys) then "1" else "0")++(tail ys)
 -- The if-then statement
 ifst' xs x ys
     | odd . ord . last $ xs = (init xs)++(removeBrace ys)
     | otherwise = (init xs)++(tail $ dropWhile (/= '}') ys)
     where removeBrace = (\st -> (takeWhile (/= '}') st)++(tail $ dropWhile (/= '}') st))
-ifst xs x ys = if (elem '}' ys) then ifst' xs x ys else (if odd . ord $ last xs then (init xs)++ys else (init xs)++(tail ys))
+ifst xs x ys = if xs == "" then (ifst "0" x ys) else (if (elem '}' ys) then ifst' xs x ys else (if odd . ord $ last xs then (init xs)++ys else (init xs)++(tail ys)))
 -- The delete function
 del = form3 (\x -> "")
 -- Get string function (inputs '\500' - special character)
@@ -99,7 +99,7 @@ subr xs x ys = (fst $ intr 0 (xs,""))++ys
 -- Jump to function
 jump xs x ys = form3 id xs x (tail ys)
 -- Equal function
-eq xs x ys = (init xs)++(if (last xs) == (head ys) then "1" else "0")++(tail ys)
+eq xs x ys = if xs == "" then "0"++(tail ys) else (init xs)++(if (last xs) == (head ys) then "1" else "0")++(tail ys)
 -- length of previous string
 length' = form3 (\x -> x++[chr . length $ x])
 -- Keeps the preceding string as a Subroutine
@@ -152,7 +152,7 @@ hand x
     | x == '_' = rep
     | x == '`' = id' -- undefined
     | x == '{' = ifst
-    | x == '|' = call -- call function
+    | x == '|' = (call "") -- call function
     | x == '}' = id' -- part of the ifst
     | x == '~' = rev
     | x == '\DEL' = del
@@ -186,7 +186,7 @@ intr n (prog,ext)
     where x = (prog!!n) -- char at current command pointer
           xs = fst $ splitAt n prog -- string before at current command
           ys = tail . snd $ splitAt n prog -- string after current command
-          newprog = (hand x) xs x ys -- string result after current command
+          newprog = if (x == '|') then (call ext) xs x ys else (hand x) xs x ys -- string result after current command
           m = if (x == '_') || (x == ';') || (x=='|') then (length newprog) - (length ys) else (if x == '@' then ord $ head ys else determinePointer x n) -- special case for _ otherwise use determinePointer
 
 ------------------------
@@ -240,4 +240,3 @@ interpret = do
     putStrLn result
 
 -- $~[!,| :[+$|$+${$z;["| d( (r( (k( (`( (E( (-(~(z:-#+#(#'#+# #'#]#<#'#+###'#Z#'#]#'#.!)^0-0$H@~$!.!T!r!u!e!
--- ^ This should be a valid program for palindrome detection
