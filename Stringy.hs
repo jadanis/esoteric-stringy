@@ -164,7 +164,7 @@ determinePointer x n
     | ((isLetter x) || (x == '(') || (x == '$') || (x == '^') || (x < ' ')) = (n + 1)
     | (x == '{') = (n - 1)
     | (x == '!') = (n - 2)
-    | (x == ',') || (x =='\DEL') = 0
+    | (x == ',') = 0
     | otherwise = n
 
 ---------------------------------------------
@@ -187,7 +187,7 @@ intr n (prog,ext)
           xs = fst $ splitAt n prog -- string before at current command
           ys = tail . snd $ splitAt n prog -- string after current command
           newprog = if (x == '|') then (call ext) xs x ys else (hand x) xs x ys -- string result after current command
-          m = if (x == '_') || (x == ';') || (x=='|') then (length newprog) - (length ys) else (if x == '@' then ord $ head ys else determinePointer x n) -- special case for _ otherwise use determinePointer
+          m = if (x == '_') || (x == ';') || (x=='|') || (x == ':') || (x == '\DEL') then (length newprog) - (length ys) else (if x == '@' then ord $ head ys else determinePointer x n) -- special case for _ otherwise use determinePointer
 
 ------------------------
 -- Run time functions --
