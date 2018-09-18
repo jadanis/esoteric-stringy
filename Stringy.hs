@@ -106,6 +106,8 @@ length' = form3 (\x -> x++[chr . length $ x])
 keep = del
 -- call the kept function
 call ext = form3 (\x -> x++ext)
+-- operates the function on only a single char instead of the whole string
+op1 xs x ys = (init xs)++((hand $ head ys) [last xs] (head ys) (tail ys))
 -- Uses up the current char but changes nothing otherwise
 use = form1 id
 -- The terminate funcion
@@ -130,7 +132,7 @@ hand x
     | x == '\'' = id' -- undefined
     | x == '(' = front
     | x == ')' = back
-    | x == '*' = mult
+    | x == '*' = op1
     | x == '+' = plus
     | x == ',' = use -- set command pointer to 0, handled elsewhere
     | x == '-' = minus
@@ -161,7 +163,7 @@ hand x
 -- Changes command pointer based on command
 determinePointer :: Char -> Int -> Int
 determinePointer x n
-    | ((isLetter x) || (x == '(') || (x == '$') || (x == '^') || (x < ' ')) = (n + 1)
+    | ((isLetter x) || (x == '(') || (x == '$') || (x == '^') || (x < ' ') || (x == '#')) = (n + 1)
     | (x == '{') = (n - 1)
     | (x == '!') = (n - 2)
     | (x == ',') = 0
@@ -186,8 +188,10 @@ intr n (prog,ext)
     where x = (prog!!n) -- char at current command pointer
           xs = fst $ splitAt n prog -- string before at current command
           ys = tail . snd $ splitAt n prog -- string after current command
-          newprog = if (x == '|') then (call ext) xs x ys else (hand x) xs x ys -- string result after current command
-          m = if (x == '_') || (x == ';') || (x=='|') || (x == ':') || (x == '\DEL') then (length newprog) - (length ys) else (if x == '@' then ord $ head ys else determinePointer x n) -- special case for _ otherwise use determinePointer
+          newprogc e ts t us = if (t == '|') then (call e) ts t us else (hand t) ts t us
+          newprog = newprogc ext xs x ys
+          lengthm p e ts t us = if (t == '_') || (t == ';') || (t=='|') || (t == ':') || (t == '\DEL') then (length $ newprogc e ts t us) - (length us) else (if t == '@' then ord $ head us else (if t == '*' then (length . init $ ts) + (lengthm 1 e [last ts] (head us) (tail us)) + 1 else determinePointer t p)) -- special case for _ otherwise use determinePointer
+          m = lengthm n ext xs x ys
 
 ------------------------
 -- Run time functions --
@@ -238,5 +242,3 @@ interpretStringy program = do
 interpret = do
     (result,ext) <- interpretStringy start
     putStrLn result
-
--- $~[!,| :[+$|$+${$z;["| d( (r( (k( (`( (E( (-(~(z:-#+#(#'#+# #'#]#<#'#+###'#Z#'#]#'#.!)^0-0$H@~$!.!T!r!u!e!
