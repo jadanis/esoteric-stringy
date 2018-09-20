@@ -190,7 +190,7 @@ intr n (prog,ext)
           ys = tail . snd $ splitAt n prog -- string after current command
           newprogc e ts t us = if (t == '|') then (call e) ts t us else (hand t) ts t us
           newprog = newprogc ext xs x ys
-          lengthm p e ts t us = if (t == '_') || (t == ';') || (t=='|') || (t == ':') || (t == '\DEL') then (length $ newprogc e ts t us) - (length us) else (if t == '@' then ord $ head us else (if t == '*' then (length . init $ ts) + (lengthm 1 e [last ts] (head us) (tail us)) + 1 else determinePointer t p)) -- special case for _ otherwise use determinePointer
+          lengthm p e ts t us = if (t == ';') || (t=='|') || (t == ':') || (t == '\DEL') then (length $ newprogc e ts t us) - (length us) else if t == '_' then (length $ newprogc e ts t us) - (length us) else (if t == '@' then ord $ head us else (if t == '*' then (length . init $ ts) + (lengthm 1 e [last ts] (head us) (tail us))  else determinePointer t p)) -- special case for _ otherwise use determinePointer
           m = lengthm n ext xs x ys
 
 ------------------------
