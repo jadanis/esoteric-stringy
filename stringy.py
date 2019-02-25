@@ -146,8 +146,14 @@ def rep(s1,s2,pt):
   pt = len(s1) * ord(s2[0])
   return com_f(res,pt)
 
-def ifst():
-  return
+def ifst(s1,s2,pt):
+  if s2.find('}') >= 0:
+    n = s2[::-1].find('}')
+    res = (s1[:-1] + s2[:-n] + s2[(-n):] ) if not even(ord(s1[-1])) else (s1[:-1] + s2[(-n):])
+    return com_f(res,(pt-1))
+  else:
+    res = s1[:-1] + s2 if not even(ord(s1[-1])) else s1[:-1]+s2[1:]
+    return com_f(res,pt-1)
 
 def call(s1,s2,pt):
   res = s1 + subroutine + s2
