@@ -1,6 +1,7 @@
 #Stringy written by Josh Danis 2018-2019
+import sys
 
-dev_mode = True
+dev_mode = False
 subroutine = ''
 
 def params(st,pt):
@@ -226,9 +227,25 @@ def hand(pt,c,s1,s2):
     return hand(pt+1,*params(s1+c+s2,pt+1))
 
 
-
 def run_stringy(st):
   print(hand(0,*params(st,0)))
 
-run_stringy(input())
 
+if __name__ == "__main__":
+  run_stringy(input())
+else:
+  sys_args = sys.argv
+  if sys_args[0] == '-d':
+    dev_mode = True
+  if sys_args[1] == '-f':
+    try:
+      file_name = sys_args[2]
+      f = open(file_name)
+      progs = f.readlines()
+      f.close()
+      for p in progs:
+        run_stringy(p)
+    except:
+      print("Error in opening file")
+  else:
+    run_stringy(input())
