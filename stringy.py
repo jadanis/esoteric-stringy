@@ -1,7 +1,6 @@
-from collections import defaultdict
+#Stringy written by Josh Danis 2018-2019
 
-
-dev_mode = False
+dev_mode = True
 subroutine = ''
 
 def params(st,pt):
@@ -13,8 +12,9 @@ def params(st,pt):
 
 def com_f(res,npt):
   if dev_mode:
-    print('Pointer at {npt}: ' + res)
+    print('Pointer at '+ str(npt) + ': ' + res)
   ps = params(res,npt)
+  npt = npt % len(res)
   return hand(npt,*ps)
 
 def help_f(f,s1):
@@ -108,8 +108,17 @@ def shiftR(s1,s2,pt):
   res = help_f(lambda x: x >> 1,s1) + s2
   return com_f(res,pt)
 
-def shuff():
-  return
+def even(n):
+  return n % 2 == 0
+
+def shuff(s1,s2,pt):
+  l = len(s1)
+  split_At_Val = l // 2 if even(l) else (l // 2) + 1
+  s1_star = s1[:split_At_Val]
+  s1_star_2 = s1[split_At_Val:]
+  s1 = ''.join([e for t in tuple(zip(s1_star,s1_star_2)) for e in t]) + (s1[split_At_Val-1] if not even(l) else '')
+  res = s1 + s2
+  return com_f(res,pt)
 
 def jump(s1,s2,pt):
   res = s1 + s2[1:]
@@ -134,7 +143,7 @@ def piv(s1,s2,pt):
 
 def rep(s1,s2,pt):
   res = (s1 * (ord(s2[0]))) + s2[1:]
-  pt = len(s2) * ord(s2[0])
+  pt = len(s1) * ord(s2[0])
   return com_f(res,pt)
 
 def ifst():
@@ -155,7 +164,7 @@ def delete(s1,s2,pt):
 def end(s1,s2,pt):
   return s1+s2
 
-coms = defaultdict(idty,{
+coms = {
     ' ' : read,
     '!' : back_jump,
     '"' : idty,
@@ -200,13 +209,16 @@ coms = defaultdict(idty,{
     '}' : idty,
     '~' : rev,
     '\DEL' : delete
-})
+}
 
 
 def hand(pt,c,s1,s2):
-  com_num = ord(c) - 32
-  command = coms[com_num]
-  return command(s1,s2,pt)
+  try:
+    command = coms[c]
+    return command(s1,s2,pt)
+  except KeyError:
+    return hand(pt+1,*params(s1+c+s2,pt+1))
+
 
 
 def run_stringy(st):
