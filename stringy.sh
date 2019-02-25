@@ -25,15 +25,15 @@ if [$COMPILER == "haskell"]; then
 else
   if [$FILE -n]; then
     if [$DEV_MODE == true]; then
-      python stringy_loop_dev.py $FILE
+      python ./stringy_py/stringy_loop_dev.py $FILE
     else
-      python stringy_loop.py $FILE
+      python ./stringy_py/stringy_loop.py $FILE
     fi
   else
     if [$DEV_MODE == true]; then
-      python stringy_dev.py
+      python ./stringy_py/stringy_dev.py
     else
-      python stringy.py
+      python ./stringy_py/stringy.py
     fi
   fi
 fi
