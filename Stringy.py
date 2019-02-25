@@ -229,23 +229,3 @@ def hand(pt,c,s1,s2):
 
 def run_stringy(st):
   print(hand(0,*params(st,0)))
-
-
-if __name__ == "__main__":
-  run_stringy(input())
-else:
-  sys_args = sys.argv
-  if sys_args[0] == '-d':
-    dev_mode = True
-  if sys_args[1] == '-f':
-    try:
-      file_name = sys_args[2]
-      f = open(file_name)
-      progs = f.readlines()
-      f.close()
-      for p in progs:
-        run_stringy(p)
-    except:
-      print("Error in opening file")
-  else:
-    run_stringy(input())
