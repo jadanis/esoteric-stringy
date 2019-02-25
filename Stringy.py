@@ -229,3 +229,8 @@ def hand(pt,c,s1,s2):
 
 def run_stringy(st):
   print(hand(0,*params(st,0)))
+
+def run_stringy_dev(st):
+  global dev_mode
+  dev_mode=True
+  run_stringy(st)
