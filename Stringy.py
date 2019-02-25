@@ -1,5 +1,5 @@
 #Stringy written by Josh Danis 2018-2019
-import sys
+import sys, os
 
 dev_mode = False
 subroutine = ''
@@ -234,3 +234,27 @@ def run_stringy_dev(st):
   global dev_mode
   dev_mode=True
   run_stringy(st)
+
+def run_stringy_loop(file_path):
+  file_name, file_ext = os.path.splittext(file_path)
+  if file_ext != '.sty':
+    print("Whoops! This does not seem to be a Stringy file!")
+  else:
+    try:
+      f = open(file_path)
+      bigS = f.read()
+      if all( (31 < ord(c) < 127) or (ord(c) == 10) or (ord(c) == 9) for c in bigS):
+        progs = f.readlines()
+        f.close()
+        for p in progs:
+          if p[0] != '\t':
+            run_stringy(p)
+      else:
+        print("This appears not to be a valid Stringy file!")
+   except:
+    print("Whoops! Something went wrong opening this file!")
+
+def run_stringy_loop_dev(file_path):
+  global dev_mode
+  dev_mode=True
+  run_stringy_loop(file_path)
