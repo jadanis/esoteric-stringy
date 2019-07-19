@@ -61,7 +61,9 @@ def back(s1,s2,pt):
   return com_f(res,pt)
 
 def op1(s1,s2,pt):
-  return
+  res = s1[:-1] + hand(1,s2[0],s1[-1],"."+s2[1:])
+  npt = len(s1[:-1])
+  return com_f(res,npt)
 
 def plus(s1,s2,pt):
   n = ord(s2[0])
@@ -127,7 +129,7 @@ def jump(s1,s2,pt):
   return com_f(res,pt)
 
 def inc(s1,s2,pt):
-  res = help_f(lambda x: x + 1, s2) + s2
+  res = help_f(lambda x: x + 1, s1) + s2
   return com_f(res,pt)
 
 def grteq(s1,s2,pt):
@@ -135,7 +137,7 @@ def grteq(s1,s2,pt):
   return com_f(res,pt)
 
 def dec(s1,s2,pt):
-  res = help_f(lambda x: x - 1, s2) + s2
+  res = help_f(lambda x: x - 1, s1) + s2
   return com_f(res,pt)
 
 def piv(s1,s2,pt):
