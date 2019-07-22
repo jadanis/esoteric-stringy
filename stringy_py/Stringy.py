@@ -61,9 +61,12 @@ def back(s1,s2,pt):
   return com_f(res,pt)
 
 def op1(s1,s2,pt):
-  res = s1[:-1] + hand(1,s2[0],s1[-1],"."+s2[1:])
-  npt = len(s1[:-1])
-  return com_f(res,npt)
+  c = s2[0]
+  if c in ['%','*','+','-','/','=','@','\\','^','_']:
+    res = s1[:-1] + hand(1,c,s1[-1],s2[1]+"."+s2[2:])
+  else:
+    res = s1[:-1] + hand(1,c,s1[-1],"."+s2[1:])
+  return com_f(res,pt)
 
 def plus(s1,s2,pt):
   n = ord(s2[0])
@@ -152,7 +155,7 @@ def rep(s1,s2,pt):
 def ifst(s1,s2,pt):
   if s2.find('}') >= 0:
     n = s2[::-1].find('}')
-    res = (s1[:-1] + s2[:-n] + s2[(-n):] ) if not even(ord(s1[-1])) else (s1[:-1] + s2[(-n):])
+    res = (s1[:-1] + s2[:-(n+1)] + s2[(-n):] ) if not even(ord(s1[-1])) else (s1[:-1] + s2[(-n):])
     return com_f(res,(pt-1))
   else:
     res = s1[:-1] + s2 if not even(ord(s1[-1])) else s1[:-1]+s2[1:]
