@@ -300,8 +300,12 @@ back_skip = hand form3 bck id
 -- The terminate funcion
 -- Same as use just another name for clarity
 end state = do
-    (prog,pt,ext,r) <- use state
-    return (prog,pt,ext,False)
+    (prog,pt,ext,r) <- state
+    let xs = take pt prog
+    let x = prog !! pt
+    let ys = drop (pt + 1) prog
+    let newprog = xs ++ ys
+    return (newprog,pt,ext,False)
 
 ---------------------------------------------------------
 -- hand (for handle) calls the string function based   --
