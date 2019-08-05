@@ -1,13 +1,19 @@
 module Stringy
-( interpretStringy
+( run
+, runStringy
 , interpret
-, intr
+, ProgramState
 ) where
 
 import Data.Bits
 import Data.Char
 import Control.Monad (join)
 import Data.List (elemIndex)
+
+type Pointer = Int
+type Operator = Char
+type Program = String
+type ProgramState = IO (Program,Pointer,Program,Bool)
 
 -- map function over a string 
 applyTo :: (Int -> Int) -> String -> String
@@ -25,52 +31,143 @@ applyTo f = map (chr . (`mod` 128) . f . ord)
 
 -- the general forms these functions take
 -- used to reduce typing later on and show functions in point-free form
-form0 :: (Int -> Int) -> String -> Char -> String -> String
-form0 f xs x ys = (applyTo f xs)++[x]++ys
-form1 :: (Int -> Int) -> String -> Char -> String -> String
-form1 f xs x ys = (applyTo f xs)++ys
-form2 :: (Int -> Int -> Int) -> String -> Char -> String -> String
-form2 f xs x ys = form1 (f $ ord $ head ys) xs x (tail ys)
-form3 :: (String -> String) -> String -> Char -> String -> String
-form3 f xs x ys = (f xs)++ys
+
+form0 :: (Int -> Int) -> Pointer -> Program -> Program
+form0 f pt prog = (applyTo f xs)++[x]++ys
+    where xs = take pt prog
+          x = prog !! pt
+          ys = drop (pt + 1) prog
+
+form1 :: (Int -> Int) -> Pointer -> Program -> Program
+form1 f pt prog = (applyTo f xs)++ys
+    where xs = take pt prog
+          x = prog !! pt
+          ys = drop (pt + 1) prog
+
+form2 :: (Int -> Int -> Int) -> Pointer -> Program -> Program
+form2 f pt prog = (applyTo n_f xs)++(tail ys)
+    where xs = take pt prog
+          x = prog !! pt
+          ys = drop (pt + 1) prog
+          n_f = f $ ord $ head ys
+
+form3 :: (String -> String) -> Pointer -> Program -> Program
+form3 f pt prog = (f xs)++ys
+    where xs = take pt prog
+          x = prog !! pt
+          ys = drop (pt + 1) prog
+
+hand b mv f state = do
+    (prog,pt,ext,r) <- state
+    let newprog = b f pt prog
+    let npt = mv pt
+    return (newprog,npt,ext,r)
+
+stay :: Pointer -> Pointer
+stay = id
+fwr :: Pointer -> Pointer
+fwr = (+) 1
+bck :: Pointer -> Pointer
+bck = subtract 2
+
+hand0 :: (Int -> Int) -> ProgramState -> ProgramState
+hand0 = hand form0 fwr
+
+hand1 :: (Int -> Int) -> ProgramState -> ProgramState
+hand1 = hand form1 stay
+
+hand2 :: (Int -> Int -> Int) -> ProgramState -> ProgramState
+hand2 = hand form2 stay
+
+hand3 :: (String -> String) -> ProgramState -> ProgramState
+hand3 = hand form3 stay
+
+
+----------------------------------------------
+-- With the except of appendDigit, the follo -
+-- wing are :: ProgramState -> ProgramState --
+-- These make up the possible opeartions fo --
+-- r Stringy.                               --
+----------------------------------------------
 
 -- The identity function
-id' = form0 id
+id' = hand0 id
+
 -- The increment function
-inc = form1 succ
+inc = hand1 succ
+
 -- The decrement function
-dec = form1 pred
+dec = hand1 pred
+
 -- The shift left function
 (<.) :: Bits a => a -> a
 (<.) = flip shiftL 1
-shiftSL = form1 (<.)
+shiftSL = hand1 (<.)
+
 -- The shift right function
 (.>) :: Bits a => a -> a
 (.>) = flip shiftR 1
-shiftSR = form1 (.>)
+shiftSR = hand1 (.>)
+
 -- The append digit function
-appendDigit :: Int -> String -> Char -> String -> String
-appendDigit n = form1 ((+n) . (*10))
+appendDigit :: Int -> (ProgramState -> ProgramState)
+appendDigit n = hand1 ((+n) . (*10))
+
 -- The modulo function
-mod' = form2 (flip mod)
+mod' = hand2 (flip mod)
+
 -- The addition function
-plus = form2 (+)
+plus = hand2 (+)
+
 -- The subtraction function
-minus = form2 subtract
+minus = hand2 subtract
+
 -- The multiplication function
-mult = form2 (*)
+mult = hand2 (*)
+
 -- the divistion function
-divi = form2 (flip div)
+divi = hand2 (flip div)
+
 -- The repeat fucntion
-rep xs x ys = (join $ replicate (ord $ head ys) xs)++(tail ys)
+rep state = do
+    (prog,pt,ext,r) <- state
+    let xs = take pt prog
+    let x = prog !! pt
+    let ys = drop (pt + 1) prog
+    let newprog = (join $ replicate (ord $ head ys) xs)++(tail ys)
+    let npt = (length xs) * (ord $ head ys)
+    return (newprog,npt,ext,r)
+
 -- The pivot function
-piv xs x ys = if xs == "" then (if (length ys) > 1 then [last ys]++(init . tail $ ys)++[head ys] else ys) else((init xs)++[head ys]++[last xs]++(tail ys))
+piv state = do
+    (prog,pt,ext,r) <- state
+    let xs = take pt prog
+    let x = prog !! pt
+    let ys = drop (pt + 1) prog
+    let newprog = if xs == "" then (if (length ys) > 1 then [last ys]++(init . tail $ ys)++[head ys] else ys) else((init xs)++[head ys]++[last xs]++(tail ys))
+    return (newprog,pt+1,ext,r)
+
 -- The throw forward function
-front xs x ys = [head ys]++xs++(tail ys)
+front state = do
+    (prog,pt,ext,r) <- state
+    let xs = take pt prog
+    let x = prog !! pt
+    let ys = drop (pt + 1) prog
+    let newprog = [head ys]++xs++(tail ys)
+    return (newprog,pt + 1,ext,r)
+
 -- The throw back function
-back xs x ys = xs++(tail ys)++[head ys]
+back state = do
+    (prog,pt,ext,r) <- state
+    let xs = take pt prog
+    let x = prog !! pt
+    let ys = drop (pt + 1) prog
+    let newprog = xs++(tail ys)++[head ys]
+    return (newprog,pt,ext,r)
+
 -- The reverse function
-rev = form3 reverse
+rev = hand3 reverse
+
 -- The shuffle function
 shuff' :: String -> String
 shuff' xs
@@ -81,38 +178,130 @@ shuff' xs
           x' = last . fst $ splitAt (s + 1) xs
           zipple (p,q) = foldl (\acc (x,y) -> acc++[x,y]) "" $ zip p q
 
-shuff = form3 shuff'
+shuff = hand3 shuff'
+
 -- The greater than or equal function
-grteq xs x ys = if xs == "" then "0"++(tail ys) else (init xs)++(if (last xs) > (head ys) then "1" else "0")++(tail ys)
+grteq state = do
+    (prog,pt,ext,r) <- state
+    let xs = take pt prog
+    let x = prog !! pt
+    let ys = drop (pt + 1) prog
+    let newprog = if xs == "" then "0"++(tail ys) else (init xs)++(if (last xs) > (head ys) then "1" else "0")++(tail ys)
+    return (newprog,pt,ext,r)
+
 -- The if-then statement
 ifst' xs x ys
     | odd . ord . last $ xs = (init xs)++(removeBrace ys)
     | otherwise = (init xs)++(tail $ dropWhile (/= '}') ys)
     where removeBrace = (\st -> (takeWhile (/= '}') st)++(tail $ dropWhile (/= '}') st))
-ifst xs x ys = if xs == "" then (ifst "0" x ys) else (if (elem '}' ys) then ifst' xs x ys else (if odd . ord $ last xs then (init xs)++ys else (init xs)++(tail ys)))
+ifst state = do
+    (prog,pt,ext,r) <- state
+    let xs = take pt prog
+    let x = prog !! pt
+    let ys = drop (pt + 1) prog
+    let newprog = if xs == "" then (ifst' "0" x ys) else (if (elem '}' ys) then ifst' xs x ys else (if odd . ord $ last xs then (init xs)++ys else (init xs)++(tail ys)))
+    return (newprog,pt - 1,ext,r)
+
 -- The delete function
-del = form3 (\x -> "")
+del = hand form3 (\x -> 0) (\x -> "")
+
+
 -- Get string function (inputs '\500' - special character)
-getString = form3 (\x -> x++['\500']) 
+getString state = do
+    (prog,pt,ext,r) <- state
+    inp <- getLine
+    let xs = take pt prog
+    let x = prog !! pt
+    let ys = drop (pt + 1) prog
+    let newprog = xs ++ inp ++ ys
+    let npt = length (xs ++ inp)
+    return (newprog,npt,ext,r)
+
+
 -- Subroutine function calls intr below
-subr xs x ys = (fst $ intr 0 (xs,""))++ys
+subr state = do
+    (prog,pt,ext,r) <- state
+    let xs = take pt prog
+    let x = prog !! pt
+    let ys = drop (pt + 1) prog
+    res <- runStringy $ return (xs,0,ext,True)
+    let newprog = res ++ ys
+    let npt = length res
+    return (newprog,npt,ext,r)
+
+
 -- Jump to function
-jump xs x ys = form3 id xs x (tail ys)
+jump state = do
+    (prog,pt,ext,r) <- state
+    inp <- getLine
+    let xs = take pt prog
+    let x = prog !! pt
+    let ys = drop (pt + 1) prog
+    let newprog = xs ++ (tail ys)
+    let npt = ord $ head ys
+    return (newprog,npt,ext,r)
+
+
 -- Equal function
-eq xs x ys = if xs == "" then "0"++(tail ys) else (init xs)++(if (last xs) == (head ys) then "1" else "0")++(tail ys)
+eq state = do
+    (prog,pt,ext,r) <- state
+    let xs = take pt prog
+    let x = prog !! pt
+    let ys = drop (pt + 1) prog
+    let newprog = if xs == "" then "0"++(tail ys) else (init xs)++(if (last xs) == (head ys) then "1" else "0")++(tail ys)
+    return (newprog,pt-1,ext,r)
+
 -- length of previous string
-length' = form3 (\x -> x++[chr . length $ x])
+length' = hand form3 fwr (\x -> x++[chr . (`mod` 128) . length $ x])
+
 -- Keeps the preceding string as a Subroutine
-keep = del
+keep state = do
+    (prog,pt,ext,r) <- state
+    let xs = take pt prog
+    let x = prog !! pt
+    let ys = drop (pt + 1) prog
+    return (ys,0,xs,r)
+
 -- call the kept function
-call ext = form3 (\x -> x++ext)
+call state = do
+    (prog,pt,ext,r) <- state
+    let xs = take pt prog
+    let x = prog !! pt
+    let ys = drop (pt + 1) prog
+    let newprog = xs ++ ext ++ ys
+    let npt = pt + (length ext)
+    return (newprog,npt,ext,r)
+
+
 -- operates the function on only a single char instead of the whole string
-op1 xs x ys = (init xs)++((hand $ head ys) [last xs] (head ys) (tail ys))
+op1 state = do
+    (prog,pt,ext,r) <- state
+    let xs = take pt prog
+    let x = prog !! pt
+    let ys = drop (pt + 1) prog
+    (res,pti,_,_) <- interpret $ return ([last xs]++ys,1,ext,r)
+    let newprog = (init xs)++res
+    let npt = pt + pti
+    return (newprog,npt,ext,r)
+
 -- Uses up the current char but changes nothing otherwise
-use = form1 id
+use = hand form1 fwr id
+
+-- Uppercase 
+upper = hand3 (map toUpper)
+
+-- Lowercase
+lower = hand3 (map toLower)
+
+ret = hand form3 (\x -> 0) id
+
+back_skip = hand form3 bck id
+
 -- The terminate funcion
 -- Same as use just another name for clarity
-end = use
+end state = do
+    (prog,pt,ext,r) <- use state
+    return (prog,pt,ext,False)
 
 ---------------------------------------------------------
 -- hand (for handle) calls the string function based   --
@@ -120,32 +309,32 @@ end = use
 -- list of functions here using guards                 --
 -- Some of this behavior is undefined yet - 09/06/18   --
 ---------------------------------------------------------
-hand :: Char -> (String -> Char -> String -> String)
-hand x
+getOp :: Operator -> (ProgramState -> ProgramState)
+getOp x
     | x == ' ' = getString -- read string input handled elsewhere
-    | x == '!' = use -- back skip function handled elsewhere
-    | x == '\"' = id' -- undefined
+    | x == '!' = back_skip -- back skip function handled elsewhere
+    | x == '\"' = upper -- undefined
     | x == '#' = length' -- length
     | x == '$' = use -- skip function handled elsewhere
     | x == '%' = mod'
     | x == '&' = id' -- undefined
-    | x == '\'' = id' -- undefined
+    | x == '\'' = lower  -- undefined
     | x == '(' = front
     | x == ')' = back
     | x == '*' = op1
     | x == '+' = plus
-    | x == ',' = use -- set command pointer to 0, handled elsewhere
+    | x == ',' = ret
     | x == '-' = minus
     | x == '.' = end
     | x == '/' = divi
     | isDigit x = (appendDigit $ read [x])
-    | x == ':' = keep -- save routine
-    | x == ';' = subr 
+    | x == ':' = keep 
+    | x == ';' = subr
     | x == '<' = shiftSL
-    | x == '=' = eq -- equal
+    | x == '=' = eq 
     | x == '>' = shiftSR
     | x == '?' = shuff
-    | x == '@' = jump -- jump function handled elsewhere
+    | x == '@' = jump 
     | isLetter x = id' -- Letters are non-ops 
     | x == '[' = inc
     | x == '\\' = grteq
@@ -154,91 +343,31 @@ hand x
     | x == '_' = rep
     | x == '`' = id' -- undefined
     | x == '{' = ifst
-    | x == '|' = (call "") -- call function
+    | x == '|' = call -- call function
     | x == '}' = id' -- part of the ifst
     | x == '~' = rev
     | x == '\DEL' = del
     | otherwise = id' -- ASCII 0 thru 31 non ops 
 
--- Changes command pointer based on command
-determinePointer :: Char -> Int -> Int
-determinePointer x n
-    | ((isLetter x) || (x == '(') || (x == '$') || (x == '^') || (x < ' ') || (x == '#')) = (n + 1)
-    | (x == '{') = (n - 1)
-    | (x == '!') = (n - 2)
-    | (x == ',') = 0
-    | otherwise = n
+interpret :: ProgramState -> ProgramState
+interpret state = do
+    (prog,pt,ext,r) <- state
+    let npt = pt `mod` (length prog)
+    let op = prog !! npt
+    (getOp op) $ return (prog,npt,ext,r)
 
----------------------------------------------
----------------------------------------------
--- intr is for manipulating the string     --
--- execute the command at the nth char     --
--- and continue this recursively           --
--- essentially handles all non-IO commands --
----------------------------------------------
----------------------------------------------
+initialState :: ProgramState
+initialState = return ("!.0+,%}^{!^^!A-*C_$A-*K/$$(`+#+#~",0,"",True)
 
-intr :: Int -> (String,String) -> (String,String)
-intr n (prog,ext)
-    | prog == "" = error "" -- error on empty string
-    | (n >= length prog) || (n < 0) = intr (n `mod` (length prog)) (prog,ext) 
-    | (x == '.') || (x == ' ') = (newprog,ext) -- done no call to intr
-    | (x == ':') = intr m (newprog,xs)
-    | otherwise = intr m (newprog,ext) -- all other commands handled here
-    where x = (prog!!n) -- char at current command pointer
-          xs = fst $ splitAt n prog -- string before at current command
-          ys = tail . snd $ splitAt n prog -- string after current command
-          newprogc e ts t us = if (t == '|') then (call e) ts t us else (hand t) ts t us
-          newprog = newprogc ext xs x ys
-          lengthm p e ts t us = if (t == ';') || (t=='|') || (t == ':') || (t == '\DEL') then (length $ newprogc e ts t us) - (length us) else if t == '_' then (length $ newprogc e ts t us) - (length us) else (if t == '@' then ord $ head us else (if t == '*' then (length . init $ ts) + (lengthm 1 e [last ts] (head us) (tail us))  else determinePointer t p)) -- special case for _ otherwise use determinePointer
-          m = lengthm n ext xs x ys
+runStringy :: ProgramState -> IO Program
+runStringy state = do
+    (prog,pt,ext,r) <- state
+    if r then
+        runStringy $ interpret state
+    else
+        return prog
 
-------------------------
--- Run time functions --
-------------------------
-
--- Contstant to indicate where input is needed
-inputMarker :: Char
-inputMarker = '\500'
-
--- Constant as string for starting a program
--- (considering intial program as user input)
-start :: ([Char],String)
-start = (inputMarker:[],"")
-
--- special index -1 if not found
-elemIndex' :: (Eq a) => a -> [a] -> Int
-elemIndex' x xs = case (elemIndex x xs) of
-                      Just n -> n
-                      Nothing -> -1
-
--- replace nth char with new string
-inject :: Int -> String -> String -> String
-inject n org inp = xs++inp++ys
-    where z = splitAt n org
-          xs = fst z
-          ys = tail . snd $ z
-
--- pointer is the index of special \500 char 
--- this is -1 if not located
--- If pointer is -1 then return the program
--- newpointer is the length of input plus current pointer
--- newprogram we replace \500 with the input
--- run intr on newprogram at newpointer
--- pass this to interpretStringy
-interpretStringy :: (String,String) -> IO (String,String)
-interpretStringy program = do
-    let pointer = elemIndex' inputMarker (fst program)
-    if pointer < 0 
-        then return program 
-        else do
-            input <- getLine
-            let newpointer = (length input) + pointer
-                newprogram = (inject pointer (fst program) input, snd program)
-            interpretStringy $ intr newpointer newprogram
-
--- pass start to interpretStringy
--- bind this result
-interpret = do
-    (result,ext) <- interpretStringy start
-    putStrLn result
+run :: IO ()
+run = do
+    output <- runStringy initialState
+    putStrLn output
