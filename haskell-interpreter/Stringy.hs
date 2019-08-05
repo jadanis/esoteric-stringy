@@ -249,7 +249,7 @@ eq state = do
     let x = prog !! pt
     let ys = drop (pt + 1) prog
     let newprog = if xs == "" then "0"++(tail ys) else (init xs)++(if (last xs) == (head ys) then "1" else "0")++(tail ys)
-    return (newprog,pt-1,ext,r)
+    return (newprog,pt,ext,r)
 
 -- length of previous string
 length' = hand form3 fwr (\x -> x++[chr . (`mod` 128) . length $ x])
