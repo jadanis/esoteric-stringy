@@ -281,7 +281,7 @@ op1 state = do
     let ys = drop (pt + 1) prog
     (res,pti,_,_) <- interpret $ return ([last xs]++ys,1,ext,r)
     let newprog = (init xs)++res
-    let npt = pt + pti
+    let npt = pt + pti - 1
     return (newprog,npt,ext,r)
 
 -- Uses up the current char but changes nothing otherwise
