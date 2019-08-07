@@ -200,7 +200,7 @@ shuff' xs
     where n = length xs
           s = n `div` 2
           x' = last . fst $ splitAt (s + 1) xs
-          zipple (p,q) = foldl (\acc (x,y) -> acc++[x,y]) "" $ zip p q
+          zipple (p,q) = join $ [ [x,y] | (x,y) <- zip p q ]
 shuff :: ProgramState -> ProgramState
 shuff = hand3 shuff'
 
