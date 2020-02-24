@@ -55,6 +55,7 @@ form3 :: (String -> String) -> Pointer -> Program -> Program
 form3 f pt prog = (f xs)++ys
     where (xs,x,ys) = gobble pt prog
 
+hand :: (p -> Pointer -> Program -> Program) -> (Pointer -> Pointer) -> p -> ProgramState -> ProgramState
 hand b mv f state = do
     (prog,pt,ext,r) <- state
     let newprog = b f pt prog
