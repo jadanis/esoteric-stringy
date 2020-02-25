@@ -38,22 +38,21 @@ gobble pt prog = (xs,x,ys)
           x = prog !! pt
           ys = drop (pt + 1) prog
 
+form' :: (f -> Program -> Operator -> Program -> Program) -> f -> Pointer -> Program -> Program
+form' l f pt prog = l f xs x ys
+  where (xs,x,ys) = gobble pt prog
+
 form0 :: (Int -> Int) -> Pointer -> Program -> Program
-form0 f pt prog = (applyTo f xs)++[x]++ys
-    where (xs,x,ys) = gobble pt prog
+form0 = form' (\f xs x ys -> (applyTo f xs)++[x]++ys)
 
 form1 :: (Int -> Int) -> Pointer -> Program -> Program
-form1 f pt prog = (applyTo f xs)++ys
-    where (xs,x,ys) = gobble pt prog
+form1 = form' (\f xs _ ys -> (applyTo f xs)++ys)
 
 form2 :: (Int -> Int -> Int) -> Pointer -> Program -> Program
-form2 f pt prog = (applyTo n_f xs)++(tail ys)
-    where (xs,x,ys) = gobble pt prog
-          n_f = f $ ord $ head ys
+form2 = form' (\f xs _ ys -> (applyTo (f $ ord $ head ys) xs)++(tail ys))
 
 form3 :: (String -> String) -> Pointer -> Program -> Program
-form3 f pt prog = (f xs)++ys
-    where (xs,x,ys) = gobble pt prog
+form3 = form' (\f xs _ ys -> (f xs)++ys)
 
 hand :: (p -> Pointer -> Program -> Program) -> (Pointer -> Pointer) -> p -> ProgramState -> ProgramState
 hand b mv f state = do
