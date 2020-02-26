@@ -6,6 +6,22 @@ READ=false
 
 OPTIND=1
 
+pyloopdev () {
+  python ./stringy_py/stringy_loop_dev.py $FILE
+}
+
+pyloop () {
+  python ./stringy_py/stringy_loop.py $FILE
+}
+
+pydev () {
+  python ./stringy_py/stringy_dev.py $FILE
+}
+
+py () {
+  python ./stringy_py/stringy.py $FILE
+}
+
 while getops ":hdf:" opt; do
   case "$opt" in
     h)
@@ -25,15 +41,15 @@ if [$COMPILER == "haskell"]; then
 else
   if [$FILE -n]; then
     if [$DEV_MODE == true]; then
-      python ./stringy_py/stringy_loop_dev.py $FILE
+      pyloodev
     else
-      python ./stringy_py/stringy_loop.py $FILE
+      pyloop
     fi
   else
     if [$DEV_MODE == true]; then
-      python ./stringy_py/stringy_dev.py
+      pydev
     else
-      python ./stringy_py/stringy.py
+      py
     fi
   fi
 fi
