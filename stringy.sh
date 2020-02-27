@@ -6,21 +6,13 @@ READ=false
 
 OPTIND=1
 
-pyloopdev () {
-  python ./stringy_py/stringy_loop_dev.py $FILE
-}
+alias pyloopdev="python ./stringy_py/stringy_loop_dev.py $FILE"
 
-pyloop () {
-  python ./stringy_py/stringy_loop.py $FILE
-}
+alias pyloop="python ./stringy_py/stringy_loop.py $FILE"
 
-pydev () {
-  python ./stringy_py/stringy_dev.py $FILE
-}
+alias pydev="python ./stringy_py/stringy_dev.py $FILE"
 
-py () {
-  python ./stringy_py/stringy.py $FILE
-}
+alias py="python ./stringy_py/stringy.py $FILE"
 
 while getops ":hdf:" opt; do
   case "$opt" in
