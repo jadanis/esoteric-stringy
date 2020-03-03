@@ -14,6 +14,7 @@ alias hask="echo This option has not been completed"
 alias haskdev="echo This option has not been completed"
 alias haskloop="echo This option has not been completed"
 alias haskloodev="echo This option has not been completed"
+alias stringy_info="cat ./stringy_info.txt"
 
 while getops ":ihdf:" opt; do
   case "$opt" in
