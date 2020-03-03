@@ -1,8 +1,8 @@
 #!/bin/bash
 
 DEV_MODE=false
-COMPILER=python
-READ=false
+COMPILER=Python
+READ="one-command"
 
 OPTIND=1
 
@@ -10,17 +10,45 @@ alias pyloopdev="python ./stringy_py/stringy_loop_dev.py $FILE"
 alias pyloop="python ./stringy_py/stringy_loop.py $FILE"
 alias pydev="python ./stringy_py/stringy_dev.py $FILE"
 alias py="python ./stringy_py/stringy.py $FILE"
-alias hask=""
-alias haskdev=""
+alias hask="echo This option has not been completed"
+alias haskdev="echo This option has not been completed"
+alias haskloop="echo This option has not been completed"
+alias haskloodev="echo This option has not been completed"
+
+while getops ":ihdf:" opt; do
+  case "$opt" in
+    i)
+      stringy_info
+      exit 1
+      ;;
+    h)
+      COMPILER="Haskell"
+      ;;
+    d)
+      DEV_MODE=true
+      ;;
+    f)
+      READ="file"
+      FILE=$OPTARG
+      ;;
+  esac
+done
+
+if [ $OPTARG -n ] 
+then
+  stringy_loop
+else
+  stringy $COMPILER" "$READ" "$DEV_MODE
+fi
 
 stringy_loop () {
   COMPILERS='Python Haskell Exit'
   BOOLS='true false Exit'
   FILES='file one-command Exit'
   PS3='Select compiler: '
-  select COMPILER in $COMPILERS
+  select COMP in $COMPILERS
   do
-    case $COMPILER in
+    case $COMP in
       Python | Haskell)
         PS3='File or one command? '
         select OP in $FILES
@@ -32,33 +60,8 @@ stringy_loop () {
               do
                 case $DEV in
                   true | false)
-                    newvar=$COMPILER" "$OP" "$DEV
-                    case $newvar in
-                      "Python one-command false")
-                        py
-                        ;;
-                      "Python file false")
-                        pyloop
-                        ;;
-                      "Python one-command true")
-                        pydev
-                        ;;
-                      "Python file true")
-                        pyloopdev
-                        ;;
-                      "Haskell one-command false")
-                        hask
-                        ;;
-                      "Haskell file false")
-                        echo Haskell file reading is not complete
-                        ;;
-                      "Haskell one-command true")
-                        haskdev
-                        ;;
-                      "Haskell file true")
-                        echo Haskell file reading is not complete
-                        ;;
-                    esac
+                    newvar=$COMP" "$OP" "$DEV
+                    stringy $newvar
                     break 2
                     ;;
                   Exit)
@@ -87,36 +90,31 @@ stringy_loop () {
   done
 }
 
-# needs completing bridging the gap ^v
-
-while getops ":hdf:" opt; do
-  case "$opt" in
-    h)
-      COMPILER="haskell"
+stringy () {
+  case $1 in
+    "Python one-command false")
+      py
       ;;
-    d)
-      DEV_MODE=true
+    "Python file false")
+      pyloop
       ;;
-    f)
-      FILE=$OPTARG
+    "Python one-command true")
+      pydev
+      ;;
+    "Python file true")
+      pyloopdev
+      ;;
+    "Haskell one-command false")
+      hask
+      ;;
+    "Haskell file false")
+      haskloop
+      ;;
+    "Haskell one-command true")
+      haskdev
+      ;;
+    "Haskell file true")
+      haskloopdev
       ;;
   esac
-done
-
-if [$COMPILER == "haskell"]; then
-  echo "Whoops! Haskell is not set up yet!"
-else
-  if [$FILE -n]; then
-    if [$DEV_MODE == true]; then
-      pyloodev
-    else
-      pyloop
-    fi
-  else
-    if [$DEV_MODE == true]; then
-      pydev
-    else
-      py
-    fi
-  fi
-fi
+}
